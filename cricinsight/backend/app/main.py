@@ -83,7 +83,13 @@ def analyze(req: AnalyzeRequest):
     recent_n = structured.recent_n
 
     if not player_names:
-        player_names = ["Virat Kohli"]
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Could not identify a player name from your question. "
+                "Please specify a player name (e.g., 'Rohit Sharma', 'David Warner', 'Hardik Pandya', 'Babar Azam')."
+            )
+        )
 
     # Resolve player codes
     resolved_players = []
