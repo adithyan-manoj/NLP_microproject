@@ -1,0 +1,110 @@
+# ==============================================================================
+# CricInsight - Git Ignore Configuration
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Datasets, Raw Data & Database Files (CRITICAL - DO NOT COMMIT)
+# ------------------------------------------------------------------------------
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp
+*.parquet
+*.arrow
+*.feather
+*.csv
+*.tsv
+
+# Raw Cricsheet data and match files
+**/data/cricsheet/
+**/data/*.duckdb
+**/data/*.duckdb.wal
+**/data/*.csv
+**/data/*.json
+backend/data/
+cricinsight/backend/data/
+
+# Model checkpoints, embeddings, and weights
+*.bin
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.pickle
+*.h5
+
+# ------------------------------------------------------------------------------
+# Secrets & Environment Variables (NEVER COMMIT)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# ------------------------------------------------------------------------------
+# Python & Virtual Environments
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# ------------------------------------------------------------------------------
+# Node.js & Frontend (React/Vite)
+# ------------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Frontend Build Output
+dist/
+dist-ssr/
+build/
+*.local
+
+# ------------------------------------------------------------------------------
+# Operating System & IDE Files
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE & Editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archives & Temporary files
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.log
+tmp/
+temp/
