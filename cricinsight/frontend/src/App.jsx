@@ -176,8 +176,8 @@ export default function App() {
             {/* Resolved Query Scope Badge */}
             <QueryScopeBadge scope={analysisResult.scope} />
 
-            {/* Key Performance Indicators */}
-            <StatCards stats={analysisResult.stats} />
+            {/* Key Performance Indicators & Comparison Panels */}
+            <StatCards stats={analysisResult.stats} comparison={analysisResult.comparison} />
 
             {/* Adaptive Chart Rendering */}
             <ChartRenderer chartSpec={analysisResult.chart} />

@@ -1,6 +1,7 @@
 """
-Cricket Data Service - DuckDB Analytical and Statistical Engine.
-Handles parameterized queries, OLAP aggregations, rolling metrics, and statistical measures.
+Cricket Data Service - DuckDB Analytical, Statistical, and Match Search Engine.
+Handles parameterized queries, OLAP aggregations, rolling metrics, player comparisons,
+and specific match scorecards/search from DuckDB.
 """
 from typing import Optional, List, Dict, Any, Tuple
 import json
@@ -12,7 +13,6 @@ from app.database.db import execute_query
 # Cache of dynamically loaded alias map
 _ALIAS_LOOKUP_CACHE: Optional[Dict[str, Tuple[str, str]]] = None
 
-# Curated canonical mapping for top international and IPL cricketers
 KNOWN_PLAYER_ALIASES: Dict[str, Tuple[str, str]] = {
     # India
     "virat kohli": ("V Kohli", "Virat Kohli"),
@@ -64,6 +64,8 @@ KNOWN_PLAYER_ALIASES: Dict[str, Tuple[str, str]] = {
     "samson": ("SV Samson", "Sanju Samson"),
     "ishan kishan": ("Ishan Kishan", "Ishan Kishan"),
     "kishan": ("Ishan Kishan", "Ishan Kishan"),
+    "tilak varma": ("Tilak Varma", "Tilak Varma"),
+    "shivam dube": ("S Dube", "Shivam Dube"),
 
     # Australia
     "david warner": ("DA Warner", "David Warner"),
@@ -110,6 +112,8 @@ KNOWN_PLAYER_ALIASES: Dict[str, Tuple[str, str]] = {
     "imam": ("Imam-ul-Haq", "Imam-ul-Haq"),
     "shadab khan": ("Shadab Khan", "Shadab Khan"),
     "shadab": ("Shadab Khan", "Shadab Khan"),
+    "saim ayub": ("Saim Ayub", "Saim Ayub"),
+    "usman khan": ("Usman Khan", "Usman Khan"),
 
     # England
     "jos buttler": ("JC Buttler", "Jos Buttler"),
@@ -182,22 +186,9 @@ KNOWN_PLAYER_ALIASES: Dict[str, Tuple[str, str]] = {
     "kusal perera": ("MDKJ Perera", "Kusal Perera"),
     "wanindu hasaranga": ("PWH de Silva", "Wanindu Hasaranga"),
     "hasaranga": ("PWH de Silva", "Wanindu Hasaranga"),
-
-    # Afghanistan
-    "rashid khan": ("Rashid Khan", "Rashid Khan"),
-    "rashid": ("Rashid Khan", "Rashid Khan"),
-    "rahmanullah gurbaz": ("Rahmanullah Gurbaz", "Rahmanullah Gurbaz"),
-    "gurbaz": ("Rahmanullah Gurbaz", "Rahmanullah Gurbaz"),
-    "ibrahim zadran": ("Ibrahim Zadran", "Ibrahim Zadran"),
-    "mohammad nabi": ("Mohammad Nabi", "Mohammad Nabi"),
-    "nabi": ("Mohammad Nabi", "Mohammad Nabi"),
 }
 
 def load_alias_lookup() -> Dict[str, Tuple[str, str]]:
-    """
-    Builds an in-memory alias dictionary loaded from both curated KNOWN_PLAYER_ALIASES
-    and the DuckDB `players` and `deliveries` tables.
-    """
     global _ALIAS_LOOKUP_CACHE
     if _ALIAS_LOOKUP_CACHE is not None:
         return _ALIAS_LOOKUP_CACHE
@@ -205,7 +196,6 @@ def load_alias_lookup() -> Dict[str, Tuple[str, str]]:
     alias_map: Dict[str, Tuple[str, str]] = dict(KNOWN_PLAYER_ALIASES)
 
     try:
-        # Load all canonical names and aliases stored in players table
         df_players = execute_query("SELECT canonical_name, aliases FROM players")
         df_batters = execute_query("SELECT DISTINCT batter FROM deliveries")
         batter_set = set(df_batters["batter"].dropna().tolist())
@@ -219,25 +209,21 @@ def load_alias_lookup() -> Dict[str, Tuple[str, str]]:
             except Exception:
                 alias_list = [canon]
 
-            # Find matching batter code in deliveries
             cricsheet_code = canon
             for candidate in alias_list:
                 if candidate in batter_set:
                     cricsheet_code = candidate
                     break
 
-            # Map canonical full name
             canon_key = canon.strip().lower()
             if canon_key not in alias_map:
                 alias_map[canon_key] = (cricsheet_code, canon)
 
-            # Map multi-token aliases from database
             for a in alias_list:
                 a_key = str(a).strip().lower()
                 if a_key and a_key not in alias_map and len(a_key) >= 4:
                     alias_map[a_key] = (cricsheet_code, canon)
 
-        # Map distinct deliveries batter names
         for b in batter_set:
             b_key = b.strip().lower()
             if b_key not in alias_map:
@@ -250,17 +236,12 @@ def load_alias_lookup() -> Dict[str, Tuple[str, str]]:
     return _ALIAS_LOOKUP_CACHE
 
 def resolve_player_identity(name_query: str) -> Optional[Tuple[str, str]]:
-    """
-    Resolves any player query string (full name, surname, or alias) to:
-    (cricsheet_batter_code, canonical_name).
-    """
     clean_q = name_query.strip().lower()
     alias_map = load_alias_lookup()
 
     if clean_q in alias_map:
         return alias_map[clean_q]
 
-    # Dynamic database search fallback
     try:
         sql = """
             SELECT canonical_name, aliases 
@@ -271,7 +252,6 @@ def resolve_player_identity(name_query: str) -> Optional[Tuple[str, str]]:
         df = execute_query(sql, [f"%{clean_q}%", f"%{clean_q}%"])
         if not df.empty:
             canon = df.iloc[0]["canonical_name"]
-            # Check deliveries table for batter code
             match_df = execute_query(
                 "SELECT batter FROM deliveries WHERE LOWER(batter) = ? OR LOWER(batter) LIKE ? LIMIT 1",
                 [clean_q, f"%{clean_q}%"]
@@ -291,10 +271,6 @@ def query_player_innings(
     end_date: Optional[str] = None,
     recent_n: Optional[int] = None
 ) -> pd.DataFrame:
-    """
-    Retrieve chronological ball-by-ball aggregated innings records for a batter from DuckDB.
-    Guarantees parameterized SQL injection protection.
-    """
     sql = """
         SELECT 
             m.match_id, 
@@ -343,9 +319,6 @@ def query_player_innings(
     return df
 
 def calculate_statistical_metrics(df: pd.DataFrame, canonical_name: str) -> Dict[str, Any]:
-    """
-    Computes rigorous cricket statistical metrics directly from the aggregated innings DataFrame.
-    """
     if df.empty:
         return {
             "player_name": canonical_name,
@@ -372,7 +345,6 @@ def calculate_statistical_metrics(df: pd.DataFrame, canonical_name: str) -> Dict
     innings_count = len(df)
     dismissals = int(df["is_out"].sum())
 
-    # Batting average: runs / outs (if never dismissed, runs / 1)
     batting_avg = round(total_runs / max(1, dismissals), 2)
     strike_rate = round((total_runs / max(1, total_balls)) * 100, 1)
 
@@ -380,7 +352,6 @@ def calculate_statistical_metrics(df: pd.DataFrame, canonical_name: str) -> Dict
     high_score_idx = df["runs"].idxmax()
     high_score_not_out = bool(df.loc[high_score_idx, "is_out"] == 0)
 
-    # Standard deviation for scoring dispersion / consistency
     std_dev = round(float(df["runs"].std()), 1) if innings_count > 1 else 0.0
     if std_dev == 0.0:
         consistency = "Single sample"
@@ -397,7 +368,6 @@ def calculate_statistical_metrics(df: pd.DataFrame, canonical_name: str) -> Dict
     centuries = int((df["runs"] >= 100).sum())
     fifties = int(((df["runs"] >= 50) & (df["runs"] < 100)).sum())
 
-    # Rolling average of last 5 innings
     rolling_last_5 = round(float(df["runs"].tail(5).mean()), 1) if innings_count > 0 else 0.0
 
     return {
@@ -418,4 +388,124 @@ def calculate_statistical_metrics(df: pd.DataFrame, canonical_name: str) -> Dict
         "centuries": centuries,
         "fifties": fifties,
         "rolling_avg_last_5": rolling_last_5,
+    }
+
+# ==============================================================================
+# MATCH-LEVEL SEARCH & SCORECARD EXTRACTION
+# ==============================================================================
+
+def find_specific_match(
+    team_a: Optional[str] = None,
+    team_b: Optional[str] = None,
+    match_type: Optional[str] = None,
+    year: Optional[int] = None,
+    match_id: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """
+    Finds a specific cricket match from DuckDB by team matchup, format, year, or ID.
+    Returns complete match metadata, innings summary, top batters, and top bowlers.
+    """
+    if match_id:
+        match_df = execute_query("SELECT * FROM matches WHERE match_id = ?", [match_id])
+    else:
+        sql = "SELECT * FROM matches WHERE 1=1"
+        params: List[Any] = []
+        if team_a and team_b:
+            sql += " AND ((UPPER(team_1) = UPPER(?) AND UPPER(team_2) = UPPER(?)) OR (UPPER(team_1) = UPPER(?) AND UPPER(team_2) = UPPER(?)))"
+            params.extend([team_a, team_b, team_b, team_a])
+        elif team_a:
+            sql += " AND (UPPER(team_1) = UPPER(?) OR UPPER(team_2) = UPPER(?))"
+            params.extend([team_a, team_a])
+
+        if match_type:
+            sql += " AND UPPER(match_type) = UPPER(?)"
+            params.append(match_type)
+
+        if year:
+            sql += " AND EXTRACT(year FROM date) = ?"
+            params.append(year)
+
+        sql += " ORDER BY date DESC LIMIT 1"
+        match_df = execute_query(sql, params)
+
+    if match_df.empty:
+        return None
+
+    match_row = match_df.iloc[0]
+    m_id = str(match_row["match_id"])
+    m_date = str(match_row["date"])
+    m_type = str(match_row["match_type"])
+    competition = str(match_row["competition"])
+    venue = str(match_row["venue"])
+    team1 = str(match_row["team_1"])
+    team2 = str(match_row["team_2"])
+
+    # Extract innings totals
+    inn_sql = """
+        SELECT innings_number, batting_team, bowling_team, 
+               SUM(batter_runs + extra_runs) as runs,
+               SUM(CASE WHEN is_wicket THEN 1 ELSE 0 END) as wickets,
+               MAX(over_num) + 1 as overs
+        FROM deliveries
+        WHERE match_id = ?
+        GROUP BY innings_number, batting_team, bowling_team
+        ORDER BY innings_number ASC
+    """
+    inn_df = execute_query(inn_sql, [m_id])
+    innings = inn_df.to_dict(orient="records")
+
+    # Extract top batters
+    bat_sql = """
+        SELECT batter, batting_team, SUM(batter_runs) as runs, COUNT(*) as balls,
+               SUM(CASE WHEN batter_runs = 4 THEN 1 ELSE 0 END) as fours,
+               SUM(CASE WHEN batter_runs = 6 THEN 1 ELSE 0 END) as sixes
+        FROM deliveries
+        WHERE match_id = ?
+        GROUP BY batter, batting_team
+        ORDER BY runs DESC
+        LIMIT 6
+    """
+    bat_df = execute_query(bat_sql, [m_id])
+    top_batters = bat_df.to_dict(orient="records")
+
+    # Extract top bowlers
+    bowl_sql = """
+        SELECT bowler, bowling_team, 
+               COUNT(*) as balls,
+               SUM(batter_runs + extra_runs) as runs_conceded,
+               SUM(CASE WHEN is_wicket AND dismissal_kind NOT IN ('run out') THEN 1 ELSE 0 END) as wickets
+        FROM deliveries
+        WHERE match_id = ?
+        GROUP BY bowler, bowling_team
+        ORDER BY wickets DESC, runs_conceded ASC
+        LIMIT 6
+    """
+    bowl_df = execute_query(bowl_sql, [m_id])
+    top_bowlers = bowl_df.to_dict(orient="records")
+
+    # Determine winner or summary
+    winner_text = "Match concluded"
+    if len(innings) >= 2:
+        inn1 = innings[0]
+        inn2 = innings[1]
+        if inn1["runs"] > inn2["runs"]:
+            margin = inn1["runs"] - inn2["runs"]
+            winner_text = f"{inn1['batting_team']} won by {margin} runs"
+        elif inn2["runs"] > inn1["runs"]:
+            margin = 10 - inn2["wickets"]
+            winner_text = f"{inn2['batting_team']} won by {margin} wickets"
+        else:
+            winner_text = "Match Tied"
+
+    return {
+        "match_id": m_id,
+        "date": m_date,
+        "format": m_type,
+        "competition": competition,
+        "venue": venue,
+        "teams": [team1, team2],
+        "result": winner_text,
+        "innings": innings,
+        "top_batters": top_batters,
+        "top_bowlers": top_bowlers,
     }

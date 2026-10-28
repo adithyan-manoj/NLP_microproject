@@ -1,12 +1,64 @@
 import React from 'react';
-import { TrendingUp, Target, Zap, ShieldCheck, Flame, Hash } from 'lucide-react';
+import { TrendingUp, Target, Zap, ShieldCheck, Flame, Hash, UserCheck } from 'lucide-react';
 
-export default function StatCards({ stats }) {
+export default function StatCards({ stats, comparison }) {
   if (!stats) return null;
 
+  // Multi-player Comparison Cards View
+  if (comparison && comparison.length > 1) {
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Head-to-Head Comparative Overview</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {comparison.map((p, idx) => (
+            <div
+              key={idx}
+              className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 shadow-xl backdrop-blur flex flex-col justify-between gap-4 transition-transform hover:-translate-y-0.5"
+            >
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div>
+                  <h4 className="font-bold text-base text-white tracking-tight">{p.player_name}</h4>
+                  <span className="text-[11px] text-slate-400">{p.innings_count} innings played</span>
+                </div>
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-xs">
+                  #{idx + 1}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+                  <div className="text-[10px] text-slate-400 uppercase font-semibold">Runs</div>
+                  <div className="text-lg font-bold text-amber-400">{p.total_runs.toLocaleString()}</div>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+                  <div className="text-[10px] text-slate-400 uppercase font-semibold">Average</div>
+                  <div className="text-lg font-bold text-emerald-400">{p.batting_average.toFixed(1)}</div>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+                  <div className="text-[10px] text-slate-400 uppercase font-semibold">Strike Rate</div>
+                  <div className="text-lg font-bold text-cyan-400">{p.strike_rate.toFixed(1)}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-slate-400 border-t border-slate-800/80 pt-2.5">
+                <span>100s / 50s: <strong className="text-white">{p.centuries} / {p.fifties}</strong></span>
+                <span>Top: <strong className="text-white">{p.high_score}{p.high_score_not_out ? '*' : ''}</strong></span>
+                <span>Consistency: <strong className="text-slate-200">±{p.std_deviation}</strong></span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Single player / Match cards
   const cards = [
     {
-      label: "Total Runs",
+      label: "Total Volume",
       value: stats.total_runs?.toLocaleString() ?? "—",
       subtext: `${stats.balls_faced ?? 0} balls faced`,
       icon: Flame,
@@ -35,8 +87,8 @@ export default function StatCards({ stats }) {
     },
     {
       label: "Consistency (Std Dev)",
-      value: typeof stats.std_deviation === 'number' ? `±${stats.std_deviation.toFixed(1)}` : "—",
-      subtext: stats.consistency_rating || "Score dispersion",
+      value: typeof stats.std_deviation === 'number' && stats.std_deviation > 0 ? `±${stats.std_deviation.toFixed(1)}` : (stats.consistency_rating || "Evaluated"),
+      subtext: stats.std_deviation > 0 ? stats.consistency_rating : "Match evaluation",
       icon: ShieldCheck,
       color: "from-indigo-500/20 to-violet-500/10 text-indigo-400 border-indigo-500/30",
     },
