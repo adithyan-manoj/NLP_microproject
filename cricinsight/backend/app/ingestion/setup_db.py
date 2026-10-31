@@ -81,8 +81,10 @@ def download_dataset_if_needed(target_dir: Path):
         return
 
     print("No JSON files found in data directory. Downloading Cricsheet dataset...")
-    temp_zip_odi = Path("/tmp/odis_test.zip")
-    temp_zip_t20 = Path("/tmp/t20s_test.zip")
+    import tempfile
+    temp_dir = Path(tempfile.gettempdir())
+    temp_zip_odi = temp_dir / "odis_test.zip"
+    temp_zip_t20 = temp_dir / "t20s_test.zip"
 
     if not temp_zip_odi.exists():
         print("Downloading ODIs zip from Cricsheet...")

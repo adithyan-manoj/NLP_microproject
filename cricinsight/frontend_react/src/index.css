@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --surface-0: #0B1017;
+  --surface-1: #111923;
+  --surface-2: #17222E;
+  --background: #0B1017;
+  --foreground: #F4F7FA;
+  --card: #111923;
+  --card-foreground: #F4F7FA;
+  --popover: #17222E;
+  --popover-foreground: #F4F7FA;
+  --primary: #B9F36B;
+  --primary-foreground: #0B1017;
+  --secondary: #17222E;
+  --secondary-foreground: #F4F7FA;
+  --muted: #17222E;
+  --muted-foreground: #9BA9B8;
+  --accent: #1E2B39;
+  --accent-foreground: #F4F7FA;
+  --destructive: #D9656B;
+  --destructive-foreground: #ffffff;
+  --border: #263442;
+  --input: #263442;
+  --ring: #55C9E8;
+  --sidebar: #0D141C;
+  --lime: #B9F36B;
+  --cyan: #55C9E8;
+  --warn: #E5B54A;
+  --pos: #6DBE8A;
+  --neg: #D9656B;
+  --shadow-1: 0 1px 0 rgba(255,255,255,.03) inset, 0 1px 2px rgba(0,0,0,.4);
+  --shadow-2: 0 12px 32px -12px rgba(0,0,0,.6);
+}
+
+body {
+  margin: 0;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular numerals for stats and matrices */
+.num, .font-mono, .tabular-nums {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.skel {
+  background: linear-gradient(90deg, #1C2937 25%, #263442 50%, #1C2937 75%);
+  background-size: 200% 100%;
+  animation: skel 1.6s infinite;
+}
+
+@keyframes skel {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.scroll-quiet::-webkit-scrollbar {
+  display: none;
+}
+.scroll-quiet {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom Sports Terminal Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0b1120;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Accessible focus visible */
+:focus-visible {
+  outline: 2px solid #06b6d4;
+  outline-offset: 2px;
+}
+
+/* CricOps Glassmorphic & Gradient Accents */
+.cricops-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(11, 17, 32, 0.92) 100%);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.cricops-card-glow {
+  box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.12);
+}
+
+.cricops-border-glow {
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+}
+
+/* High contrast metric pill */
+.cricops-pill {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+/* Subtle pulse for live data */
+@keyframes cricops-pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+.animate-pulse-slow {
+  animation: cricops-pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

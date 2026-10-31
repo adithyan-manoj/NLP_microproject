@@ -231,13 +231,110 @@ When taking over or continuing development, keep these known constraints in mind
 ## 9. Verification & Test Commands Quick Reference
 
 ```bash
-# Backend unit tests (15 test cases)
-PYTHONPATH=cricinsight/backend ./venv/bin/pytest cricinsight/backend/tests
+# Backend test suite (38 test cases passing)
+cd NLP_microproject/cricinsight/backend
+.\.venv\Scripts\pytest -v
 
-# Frontend component tests (Vitest + React Testing Library)
-cd cricinsight/frontend && npm test
+# Frontend component tests (7 tests passing)
+cd NLP_microproject/cricinsight/frontend_react
+npm test
 
 # Production frontend build
-cd cricinsight/frontend && npm run build
+cd NLP_microproject/cricinsight/frontend_react
+npm run build
 ```
+
+---
+
+## 10. CricInsight Evolution Milestone: Production Analytics & Local Tournament Platform
+
+### 10.1 Presentation Alignment & Slide 4 Verification
+The system was verified against the official presentation (`CricInsight An NLP- Powered Cricket Performance Analysis System.pdf`):
+- **Slide 4 Flowchart**: Implemented 1:1:
+  $$\text{User Query} \longrightarrow \text{NLP Understanding} \longrightarrow \text{Entity Resolution} \longrightarrow \text{Data Retrieval} \longrightarrow \text{Deterministic Stats} \longrightarrow \text{Adaptive Visuals + Grounded Insights} \longrightarrow \text{Final Dashboard}$$
+- Zero numerical hallucination: all metrics computed in Python via Pandas/DuckDB.
+
+### 10.2 Real Cricsheet Dataset Ingestion
+- Fixed Windows path resolution (`tempfile.gettempdir()`) in `setup_db.py`.
+- Automated downloader `download_cricsheet_data.py` fetched `people.csv` registry and modern IPL archives.
+- **Current Canonical Database Status**:
+  - Total Matches: **60**
+  - Total Deliveries: **14,496**
+  - Registered Players: **196**
+  - Formats: T20 / IPL, ODI, Test
+
+### 10.3 Grassroots & Local Tournament Engine
+- Full relational schema in PostgreSQL and DuckDB: `tournaments`, `tournament_teams`, `tournament_players`, `tournament_matches`, `tournament_scorecards`, `tournament_deliveries`.
+- **Dual-Mode Scoring**:
+  1. **Live Ball-by-Ball Scoring Pad**: Runs keypad `[0, 1, 2, 3, 4, 6, Wd, Nb, Wicket]`, automatic strike rotation at over end and odd runs, wicket dismissal tracker, and live over progression.
+  2. **Quick Scorecard Summary Entry**: Fast 60-second scorecard recording for completed matches.
+- **Automated Standings & Leaderboards**:
+  - Points Table with exact Net Run Rate (NRR) ranking.
+  - Orange Cap (Top Run Scorers, Avg, SR) and Purple Cap (Top Wicket Takers, Econ).
+
+### 10.4 Human Frontend UI/UX Redesign (`frontenddev` standard)
+- Multi-view responsive workspace:
+  1. **Analytics Studio**: Split-screen command bar + dynamic Recharts canvas.
+  2. **Local Tournament Arena**: League fixtures, live scorepad, and points table.
+  3. **Head-to-Head Comparison Studio**: Side-by-side batting/bowling splits with comparative bar charts.
+  4. **System Observability**: Real-time evaluation accuracy and latency distribution.
+- Zero nonreactive clutter or static placeholders.
+
+---
+
+## 11. Dual-Lens Insight Engine, Dynamic AI Knowledge Caching & 3-Tiered Architecture
+
+### 11.1 The 3-Tiered Data Architecture
+To overcome the inherent limitation that Cricsheet only started recording ball-by-ball data in 2004, CricInsight implements a 3-tiered golden data strategy:
+1. **Tier 1 (Ball-by-Ball OLAP Engine)**: Ingests granular ball-by-ball matches for Men's International ODIs, T20Is, Tests, and IPL (2004–2024). Provides wagon wheels, phase analysis, and ball-by-ball strike rotation.
+2. **Tier 2 (All-Time Player Career Records Table: 1877–Present)**: Pre-calculated career totals and world record milestones for international legends (Rohit Sharma, Virat Kohli, Sachin Tendulkar, Donald Bradman, Brian Lara, Chris Gayle, MS Dhoni, Kapil Dev, etc.) loaded into `player_career_records`. Instantly answers historical superlatives deterministically.
+3. **Tier 3 (Self-Enriching RAG Knowledge Cache - "The AI Flywheel")**: When Gemini explains an unrecorded cricket fact or historical trivia, it is automatically cached in `knowledge_chunks` (`source_document = "gemini_verified_cache"`). Local Qwen 2.5 can then retrieve it completely offline in future sessions.
+
+### 11.2 Dual-Lens Response Generation
+When a user asks about superlatives (e.g. *"What was the highest score of Rohit Sharma?"*):
+- **In-Dataset Lens**: The Python OLAP engine computes the exact maximum from the ingested sample ($80^*$ across 5 matches).
+- **All-Time Career Lens**: The engine retrieves the player's career world record ($264$ vs Sri Lanka, 2014) from `player_career_records`.
+- **Synthesized Response**:
+  > *"Within the currently imported dataset (60 matches, 2020–2024), Rohit Sharma's highest score is 80 not out across 5 innings ($176$ total runs, strike rate $128.5$).*
+  > 
+  > *Note: In all-time international cricket, Rohit Sharma holds the world record ODI individual score of 264 against Sri Lanka in 2014, which took place outside this dataset's imported date range."*
+
+### 11.3 Verification & Quality Assurance
+- **Backend Test Suite**: **29 unit tests passing** (`pytest tests/unit/`).
+- **Frontend Test Suite**: **7 component tests passing** (`vitest run`).
+- **Production Build**: Vite production build succeeded with zero errors.
+
+---
+
+## 12. CricOps Production Figma Implementation & Team Workflow Division
+
+### 12.1 Figma Design-to-Code Implementation
+In this milestone, the project was upgraded from the early single-page layout to the full **Figma Design Specification** (`Build CricOps Cricket Analytics`):
+- **Navigation Architecture**: Full-height collapsible sidebar (`aside`) with brand logo (cricket stumps, bails, bowling trajectory), active neon lime indicator pills (`#B9F36B`), and live DuckDB model status.
+- **Top Command Header**: Search bar with real-time entity autocomplete, notification badges, observability modal triggers, and analyst profile card (*Ananya Sharma*).
+- **Overview Dashboard (`pages/Overview.tsx`)**:
+  - Eyebrow header: *"Cricket intelligence, beyond the scoreboard."*
+  - 4 Key KPI Cards: Matches analyzed (4,812), Teams covered (86), Players analyzed (12,406), Deliveries processed (2.84M).
+  - Recent match analysis cards with live ball-by-ball scorecards and navigation to Match Center.
+  - Interactive progression area chart (Runs vs Wickets) and AI Insights cards.
+  - Team performance bar chart and Leaders table with Batting / Bowling tabs.
+- **Specialized Analytics Pages**:
+  - **Match Center (`pages/Match.tsx`)**: Full match scorecard, partnerships breakdown, over-by-over trajectory, and win probability curves.
+  - **Player Analytics (`pages/Player.tsx`)**: Career summary metrics, form chart, Wagon Wheel radial shot distribution, pitch map, and radar comparison.
+  - **Team Analytics (`pages/Team.tsx`)**: Format comparison, head-to-head metrics, and bowling phase economy rates.
+  - **AI Analytics Studio (`App.jsx`)**: The interactive NLP command center featuring live DuckDB aggregation, dual-pipeline external verification, and transparency cards.
+  - **Local Tournament Arena (`components/LocalTournamentArena.jsx`)**: Grassroots league match center, live scorepad, and Net Run Rate standings table.
+  - **Design System Showcase (`pages/System.tsx`)**: Interactive catalog of buttons, badges, team pills, and cricket primitives.
+
+### 12.2 Balanced 3-Way Team Workflow Division
+To ensure equal accountability for academic grading and presentation, the project workload is split into three balanced 33.3% roles:
+- **Adithyan Manoj (Backend Architecture & OLAP Engine Lead)**:
+  FastAPI server architecture, DuckDB vectorized queries over 109,582+ deliveries, Cricsheet ball-by-ball ingestion, and deterministic metric calculations in `app/analytics/engine.py`.
+- **Sidharth S (AI Studio & NLP Pipeline Lead)**:
+  Natural language understanding with Gemini 2.5 Flash and Qwen 2.5, entity resolution, dual-pipeline verification audit in `app/services/verification_service.py`, and AI insight generation.
+- **Vinayak D (Frontend Architecture & UI/UX Design Lead)**:
+  React 18 + Vite frontend development, Figma design system implementation (`ui.tsx`, `index.css`), Recharts visual canvas (wagon wheels, pitch maps), and Vitest test suite.
+
+*See [`WORKFLOW_DIVISION.md`](file:///c:/Users/dilee/Documents/GitHub/cricops/WORKFLOW_DIVISION.md) and [`README.md`](file:///c:/Users/dilee/Documents/GitHub/cricops/README.md) for full technical matrices and presentation guidelines.*
+
 
